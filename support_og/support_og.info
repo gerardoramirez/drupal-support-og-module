@@ -1,0 +1,5 @@
+name = Support OG Integration
+package = Support
+description = Allows for users to view tickets in their own group
+dependencies[] = support
+core = 7.x

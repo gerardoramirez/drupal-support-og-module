@@ -1,0 +1,51 @@
+<?php
+
+// $Id$
+
+/**
+ * @file
+ * Enables Support and Organic Groups module co-existance.
+ *  
+ */
+
+/**
+ * Implements hook_node_access();
+ */
+function support_og_node_access($node, $op, $account) {
+    $type = is_string($node) ? $node : $node->type;
+
+    if ($type == 'support_ticket' && $op == 'view') {
+        // if the user is the owner then we will always grant him access.
+        if (($account->uid == $node->uid && $account->uid != 0)) {
+            return NODE_ACCESS_IGNORE;
+        } else {
+            // since you are not the owner. Lets keep your uid for a lookup
+            $owner_gid_of_node = getNonOwnerSupportGID($node->uid);
+        }
+        // get the og_context from the user session. 
+        if (isset($_SESSION['og_context'])) {
+            $group_audience_key = $_SESSION['og_context'];
+        } else {
+            // if no context is available, then lets be safe and create an 
+            // invalid context
+            $group_audience_key = -9999;
+        }
+
+        if ($owner_gid_of_node == $group_audience_key) {
+            return NODE_ACCESS_IGNORE;
+        } else {
+            return NODE_ACCESS_DENY;
+        }
+    }
+    return NODE_ACCESS_IGNORE;
+}
+
+function getNonOwnerSupportGID($uid) {
+    // perform query of owner gid
+    $query = db_select('og_membership', 'm');
+       $query->addField('m', 'gid');
+       $query->condition('etid', $uid);
+    $results = $query->execute();
+    // fetech result
+    return $results->fetchColumn();
+}
